@@ -21,6 +21,7 @@ import rs.raf.banka2_bek.currency.model.Currency;
 import rs.raf.banka2_bek.exchange.ExchangeService;
 import rs.raf.banka2_bek.exchange.dto.CalculateExchangeResponseDto;
 import rs.raf.banka2_bek.exchange.dto.ExchangeRateDto;
+import rs.raf.banka2_bek.notification.service.MailSenderService;
 import rs.raf.banka2_bek.payment.dto.CreatePaymentRequestDto;
 import rs.raf.banka2_bek.payment.dto.PaymentDirection;
 import rs.raf.banka2_bek.payment.dto.PaymentListItemDto;
@@ -31,7 +32,6 @@ import rs.raf.banka2_bek.payment.model.PaymentStatus;
 import rs.raf.banka2_bek.payment.repository.PaymentAccountRepository;
 import rs.raf.banka2_bek.payment.repository.PaymentRepository;
 import rs.raf.banka2_bek.payment.service.implementation.PaymentServiceImpl;
-import rs.raf.banka2_bek.notification.service.MailNotificationService;
 import rs.raf.banka2_bek.interbank.service.BankRoutingService;
 import rs.raf.banka2_bek.interbank.service.TransactionExecutorService;
 import rs.raf.banka2_bek.interbank.service.InterbankPaymentAsyncService;
@@ -66,7 +66,7 @@ class PaymentServiceImplExtendedTest {
     @Mock private TransactionService transactionService;
     @Mock private PaymentReceiptPdfGenerator paymentReceiptPdfGenerator;
     @Mock private ExchangeService exchangeService;
-    @Mock private MailNotificationService mailNotificationService;
+    @Mock private MailSenderService mailSenderService;
     @Mock private BankRoutingService bankRoutingService;
     @Mock private TransactionExecutorService transactionExecutorService;
     @Mock private InterbankPaymentAsyncService interbankPaymentAsyncService;
@@ -85,7 +85,7 @@ class PaymentServiceImplExtendedTest {
         paymentService = new PaymentServiceImpl(
                 paymentRepository, paymentAccountRepository, accountRepository,
                 clientRepository, transactionService, paymentReceiptPdfGenerator,
-                exchangeService, mailNotificationService,
+                exchangeService, mailSenderService,
                 bankRoutingService, transactionExecutorService,
                 interbankPaymentAsyncService, interbankTransactionRepository,
                 "22200022");
@@ -132,7 +132,7 @@ class PaymentServiceImplExtendedTest {
                 p.setCreatedAt(LocalDateTime.now());
                 return p;
             });
-            doThrow(new RuntimeException("SMTP error")).when(mailNotificationService)
+            doThrow(new RuntimeException("SMTP error")).when(mailSenderService)
                     .sendPaymentConfirmationMail(anyString(), any(), anyString(), anyString(), anyString(), any(), anyString());
 
             PaymentResponseDto response = paymentService.createPayment(request);

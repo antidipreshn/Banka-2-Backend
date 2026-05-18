@@ -12,7 +12,6 @@ import org.springframework.http.*;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.context.annotation.Import;
 import rs.raf.banka2_bek.TestObjectMapperConfig;
 import org.springframework.test.context.ActiveProfiles;
@@ -39,10 +38,10 @@ import rs.raf.banka2_bek.card.repository.CardRepository;
 import rs.raf.banka2_bek.card.repository.CardRequestRepository;
 import rs.raf.banka2_bek.exchange.ExchangeService;
 import rs.raf.banka2_bek.loan.repository.LoanInstallmentRepository;
+import rs.raf.banka2_bek.notification.service.MailSenderService;
 import rs.raf.banka2_bek.transfers.repository.TransferRepository;
 import rs.raf.banka2_bek.loan.repository.LoanRepository;
 import rs.raf.banka2_bek.loan.repository.LoanRequestRepository;
-import rs.raf.banka2_bek.notification.service.MailNotificationService;
 import rs.raf.banka2_bek.IntegrationTestCleanup;
 
 import javax.sql.DataSource;
@@ -84,7 +83,7 @@ class LoanControllerIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
 
     @MockitoBean private ExchangeService exchangeService;
-    @MockitoBean private MailNotificationService mailNotificationService;
+    @MockitoBean private MailSenderService mailSenderService;
     @MockitoBean private rs.raf.banka2_bek.otp.service.OtpService otpService;
 
     @BeforeEach

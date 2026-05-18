@@ -59,7 +59,7 @@ public class AccountLockoutService {
      *    - Kad failedLoginAttempts >= maxFailedAttempts, postaviti
      *      accountLockedUntil = LocalDateTime.now().plusMinutes(10).
      *    - Poslati email korisniku o zakljucavanju (koristiti postojeci
-     *      MailNotificationService ili ApplicationEventPublisher).
+     *      MailSenderService ili ApplicationEventPublisher).
      *    - Baciti AccountLockedException odmah (kao i sada).
      *
      * 4. recordSuccess(email):

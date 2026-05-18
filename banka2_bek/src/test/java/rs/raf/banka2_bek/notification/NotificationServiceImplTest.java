@@ -5,15 +5,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import rs.raf.banka2_bek.notification.repository.NotificationRepository;
-import rs.raf.banka2_bek.notification.service.MailNotificationService;
-import rs.raf.banka2_bek.notification.service.NotificationService;
+import rs.raf.banka2_bek.notification.service.MailSenderService;
+import rs.raf.banka2_bek.notification.service.NotificationServiceImpl;
 
 // ============================================================
 // TODO [B1 - Notifikacioni sistem | Nosilac: Mina Kovacevic, Tadija]
 //
-// Jedinicni (Mockito) testovi za NotificationService.
+// Jedinicni (Mockito) testovi za NotificationServiceImpl.
 // Koristiti @ExtendWith(MockitoExtension.class) i @InjectMocks.
-// Mock-ovati: NotificationRepository, MailNotificationService,
+// Mock-ovati: NotificationRepository, MailSenderService,
 // i repozitorijume primaoca (ClientRepository, EmployeeRepository).
 //
 // IMPLEMENTIRATI (svi test slucajevi, jedan @Test po stavci):
@@ -24,11 +24,11 @@ import rs.raf.banka2_bek.notification.service.NotificationService;
 //           (verify NotificationRepository.save sa ArgumentCaptor-om
 //            i proveriti sva polja: recipientId, type, title, body,
 //            read = false, referenceType, referenceId)
-//        b) pozove odgovarajucu metodu MailNotificationService-a
+//        b) pozove odgovarajucu metodu MailSenderService-a
 //           (npr. sendPaymentConfirmationMail za tip PAYMENT)
 //
 //   2. notify_emailFailureDoesNotRollbackPersistence
-//      — kada MailNotificationService baci RuntimeException,
+//      — kada MailSenderService baci RuntimeException,
 //        notifikacija treba da ostane sacuvana u bazi;
 //        service treba da proguta grescu ili je loghuje, ne da je
 //        propagira ka pozivaocima (definisati ocekivano ponasanje)
@@ -76,14 +76,14 @@ import rs.raf.banka2_bek.notification.service.NotificationService;
 // Spec: Zadaci_Backend.pdf, zadatak B1.
 // ============================================================
 @ExtendWith(MockitoExtension.class)
-class NotificationServiceTest {
+class NotificationServiceImplTest {
 
     @Mock
     private NotificationRepository notificationRepository;
 
     @Mock
-    private MailNotificationService mailNotificationService;
+    private MailSenderService mailSenderService;
 
     @InjectMocks
-    private NotificationService notificationService;
+    private NotificationServiceImpl notificationServiceImpl;
 }

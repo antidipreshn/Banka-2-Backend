@@ -6,7 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import rs.raf.banka2_bek.account.event.AccountCreatedEvent;
-import rs.raf.banka2_bek.notification.service.MailNotificationService;
+import rs.raf.banka2_bek.notification.service.MailSenderService;
 
 import static org.mockito.Mockito.verify;
 
@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 class AccountCreatedEventListenerTest {
 
     @Mock
-    private MailNotificationService mailNotificationService;
+    private MailSenderService mailSenderService;
 
     @InjectMocks
     private AccountCreatedEventListener listener;
@@ -27,7 +27,7 @@ class AccountCreatedEventListenerTest {
 
         listener.onClientAccountCreatedEvent(event);
 
-        verify(mailNotificationService).sendAccountCreatedConfirmationMail(
+        verify(mailSenderService).sendAccountCreatedConfirmationMail(
                 "klijent@test.com", "Jovan", "2220001000000011", "Tekući"
         );
     }

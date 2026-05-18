@@ -38,7 +38,7 @@ import java.time.LocalDate;
  *      postojece sablone u notification/template/) i injektovan u ovaj servis.
  */
 @Service
-public class MailNotificationService {
+public class MailSenderService {
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
@@ -53,18 +53,18 @@ public class MailNotificationService {
     private final OtpEmailTemplate otpEmailTemplate;
     private final TransactionEmailTemplate transactionEmailTemplate;
 
-    public MailNotificationService(JavaMailSender mailSender,
-                                   PasswordResetEmailTemplate passwordResetEmailTemplate,
-                                   ActivationEmailTemplate activationEmailTemplate,
-                                   ActivationConfirmedEmailTemplate activationConfirmedEmailTemplate,
-                                   AccountCreatedConfirmationEmailTemplate accountCreatedConfirmationEmailTemplate,
-                                   OtpEmailTemplate otpEmailTemplate,
-                                   TransactionEmailTemplate transactionEmailTemplate,
-                                   @Value("${spring.mail.username}") String fromAddress,
-                                   @Value("${notification.password-reset-url-base}") String passwordResetUrlBase,
-                                   @Value("${notification.password-reset-page-path:/reset-password}") String passwordResetPagePath,
-                                   @Value("${notification.activation-url-base}") String activationUrlBase,
-                                   @Value("${notification.activation-page-path:/activate-account}") String activationPagePath) {
+    public MailSenderService(JavaMailSender mailSender,
+                             PasswordResetEmailTemplate passwordResetEmailTemplate,
+                             ActivationEmailTemplate activationEmailTemplate,
+                             ActivationConfirmedEmailTemplate activationConfirmedEmailTemplate,
+                             AccountCreatedConfirmationEmailTemplate accountCreatedConfirmationEmailTemplate,
+                             OtpEmailTemplate otpEmailTemplate,
+                             TransactionEmailTemplate transactionEmailTemplate,
+                             @Value("${spring.mail.username}") String fromAddress,
+                             @Value("${notification.password-reset-url-base}") String passwordResetUrlBase,
+                             @Value("${notification.password-reset-page-path:/reset-password}") String passwordResetPagePath,
+                             @Value("${notification.activation-url-base}") String activationUrlBase,
+                             @Value("${notification.activation-page-path:/activate-account}") String activationPagePath) {
         this.mailSender = mailSender;
         this.passwordResetEmailTemplate = passwordResetEmailTemplate;
         this.activationEmailTemplate = activationEmailTemplate;
@@ -172,5 +172,11 @@ public class MailNotificationService {
         String html = transactionEmailTemplate.buildInstallmentFailedBody(loanNumber, amountDue, currency, nextRetryDate);
         HtmlMailSender.sendHtmlMail(mailSender, fromAddress, toEmail, subject, html);
     }
+
+
+    public void sendInAppNotificationMail() {
+        // TODO: IMPLEMENTIRATI F-je za slanje in-app mailova
+    }
+
 }
 

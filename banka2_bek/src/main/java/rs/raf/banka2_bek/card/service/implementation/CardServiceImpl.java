@@ -20,7 +20,7 @@ import rs.raf.banka2_bek.card.repository.CardRepository;
 import rs.raf.banka2_bek.card.service.CardService;
 import rs.raf.banka2_bek.client.model.Client;
 import rs.raf.banka2_bek.client.repository.ClientRepository;
-import rs.raf.banka2_bek.notification.service.MailNotificationService;
+import rs.raf.banka2_bek.notification.service.MailSenderService;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,7 +44,7 @@ public class CardServiceImpl implements CardService {
     private final CardRepository cardRepository;
     private final AccountRepository accountRepository;
     private final ClientRepository clientRepository;
-    private final MailNotificationService mailNotificationService;
+    private final MailSenderService mailSenderService;
 
     @Override
     @Transactional
@@ -153,7 +153,7 @@ public class CardServiceImpl implements CardService {
 
         try {
             String last4 = card.getCardNumber().substring(card.getCardNumber().length() - 4);
-            mailNotificationService.sendCardBlockedMail(
+            mailSenderService.sendCardBlockedMail(
                     card.getClient().getEmail(), last4, LocalDate.now());
         } catch (Exception e) {
             log.warn("Failed to send card notification email", e);
@@ -176,7 +176,7 @@ public class CardServiceImpl implements CardService {
 
         try {
             String last4 = card.getCardNumber().substring(card.getCardNumber().length() - 4);
-            mailNotificationService.sendCardUnblockedMail(
+            mailSenderService.sendCardUnblockedMail(
                     card.getClient().getEmail(), last4);
         } catch (Exception e) {
             log.warn("Failed to send card notification email", e);

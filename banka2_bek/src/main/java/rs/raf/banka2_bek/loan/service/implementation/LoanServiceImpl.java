@@ -18,7 +18,7 @@ import rs.raf.banka2_bek.loan.service.LoanService;
 import rs.raf.banka2_bek.loan.repository.LoanInstallmentRepository;
 import rs.raf.banka2_bek.loan.repository.LoanRepository;
 import rs.raf.banka2_bek.loan.repository.LoanRequestRepository;
-import rs.raf.banka2_bek.notification.service.MailNotificationService;
+import rs.raf.banka2_bek.notification.service.MailSenderService;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -49,7 +49,7 @@ public class LoanServiceImpl implements LoanService {
     private final AccountRepository accountRepository;
     private final ClientRepository clientRepository;
     private final CurrencyRepository currencyRepository;
-    private final MailNotificationService mailNotificationService;
+    private final MailSenderService mailSenderService;
     private final String bankRegistrationNumber;
 
     public LoanServiceImpl(LoanRequestRepository loanRequestRepository,
@@ -58,7 +58,7 @@ public class LoanServiceImpl implements LoanService {
                            AccountRepository accountRepository,
                            ClientRepository clientRepository,
                            CurrencyRepository currencyRepository,
-                           MailNotificationService mailNotificationService,
+                           MailSenderService mailSenderService,
                            @Value("${bank.registration-number}") String bankRegistrationNumber) {
         this.loanRequestRepository = loanRequestRepository;
         this.loanRepository = loanRepository;
@@ -66,7 +66,7 @@ public class LoanServiceImpl implements LoanService {
         this.accountRepository = accountRepository;
         this.clientRepository = clientRepository;
         this.currencyRepository = currencyRepository;
-        this.mailNotificationService = mailNotificationService;
+        this.mailSenderService = mailSenderService;
         this.bankRegistrationNumber = bankRegistrationNumber;
     }
 
@@ -109,7 +109,7 @@ public class LoanServiceImpl implements LoanService {
         LoanRequestResponseDto response = toRequestResponse(loanRequestRepository.save(loanRequest));
 
         try {
-            mailNotificationService.sendLoanRequestSubmittedMail(
+            mailSenderService.sendLoanRequestSubmittedMail(
                     client.getEmail(),
                     loanRequest.getLoanType().name(),
                     loanRequest.getAmount(),
@@ -228,7 +228,7 @@ public class LoanServiceImpl implements LoanService {
         }
 
         try {
-            mailNotificationService.sendLoanApprovedMail(
+            mailSenderService.sendLoanApprovedMail(
                     request.getClient().getEmail(),
                     loan.getLoanNumber(),
                     loan.getAmount(),
@@ -256,7 +256,7 @@ public class LoanServiceImpl implements LoanService {
         LoanRequestResponseDto response = toRequestResponse(loanRequestRepository.save(request));
 
         try {
-            mailNotificationService.sendLoanRejectedMail(
+            mailSenderService.sendLoanRejectedMail(
                     request.getClient().getEmail(),
                     request.getLoanType().name(),
                     request.getAmount(),

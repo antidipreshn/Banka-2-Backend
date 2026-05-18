@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 //   - UserResolver userResolver
 //       Postoji u rs.raf.banka2_bek.auth.util.UserResolver;
 //       koristi resolveCurrent() za dohvatanje ownerId + ownerType.
-//   - MailNotificationService mailNotificationService  [opciono]
+//   - MailSenderService mailNotificationService  [opciono]
 //       Za slanje email-a korisniku kad se alarm okine.
 //       Alternativa: ApplicationEventPublisher + domenski dogadjaj.
 //

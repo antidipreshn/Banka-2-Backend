@@ -23,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class MailNotificationServiceTest {
+class MailSenderServiceImplTest {
 
     @Mock
     private JavaMailSender mailSender;
@@ -40,7 +40,7 @@ class MailNotificationServiceTest {
     @Mock
     private TransactionEmailTemplate transactionEmailTemplate;
 
-    private MailNotificationService service;
+    private MailSenderService service;
 
 
     @BeforeEach
@@ -48,7 +48,7 @@ class MailNotificationServiceTest {
         MimeMessage mimeMessage = new MimeMessage(Session.getInstance(new Properties()));
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
 
-        service = new MailNotificationService(
+        service = new MailSenderService(
                 mailSender,
                 passwordResetTemplate,
                 activationTemplate,
