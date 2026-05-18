@@ -1,9 +1,8 @@
 package rs.raf.banka2_bek.notification.dto;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 // ============================================================
 // TODO [B1 - Notifikacioni sistem | Nosilac: Mina Kovacevic, Tadija]
@@ -27,13 +26,21 @@ import lombok.Setter;
 // ============================================================
 // Napomena: skeleton je prazan pa nosi samo @NoArgsConstructor. Pri dodavanju
 // polja vratiti @AllArgsConstructor i @Builder (videti Lombok napomenu u TODO-u).
+
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class NotificationDto {
 
-
-
+    private Long id;
+    private String type;
+    private String title;
+    private String body;
+    private boolean read;
+    private LocalDateTime createdAt;
+    private String referenceType;
+    private Long referenceId;
 
 }

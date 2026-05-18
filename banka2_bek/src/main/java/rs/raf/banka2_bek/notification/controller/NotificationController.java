@@ -2,7 +2,7 @@ package rs.raf.banka2_bek.notification.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import rs.raf.banka2_bek.notification.service.NotificationServiceImpl;
+import rs.raf.banka2_bek.notification.service.NotificationService;
 
 // ============================================================
 // TODO [B1 - Notifikacioni sistem | Nosilac: Mina Kovacevic, Tadija]
@@ -51,9 +51,9 @@ import rs.raf.banka2_bek.notification.service.NotificationServiceImpl;
 @RequestMapping("/notifications")
 public class NotificationController {
 
-    private final NotificationServiceImpl notificationServiceImpl;
+    private final NotificationService notificationService;
 
-    public NotificationController(NotificationServiceImpl notificationServiceImpl) {
-        this.notificationServiceImpl = notificationServiceImpl;
+    public NotificationController(NotificationService notificationService) {
+        this.notificationService = notificationService;
     }
 }

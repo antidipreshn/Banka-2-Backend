@@ -1,5 +1,6 @@
 package rs.raf.banka2_bek.notification.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import rs.raf.banka2_bek.notification.dto.NotificationDto;
@@ -78,11 +79,13 @@ public class NotificationServiceImpl implements NotificationService {
         return 0L;
     }
 
+    @Transactional
     @Override
     public NotificationDto markOneRead(Long notificationId, String principalEmail, String recipientType) {
         return null;
     }
 
+    @Transactional
     @Override
     public void markAllRead(String principalEmail, String recipientType) {
 

@@ -1,15 +1,14 @@
 package rs.raf.banka2_bek.notification.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
+
+import java.time.LocalDateTime;
 
 // ============================================================
 // TODO [B1 - Notifikacioni sistem | Nosilac: Mina Kovacevic, Tadija]
@@ -36,6 +35,7 @@ import lombok.Setter;
 // Konvencija: pratiti paket `savings` kao sablon.
 // Spec: Zadaci_Backend.pdf, zadatak B1.
 // ============================================================
+
 @Entity
 @Table(name = "notifications")
 @Getter
@@ -48,4 +48,40 @@ public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
+    private Long recipientId;
+
+    @Column(nullable = false)
+    private String recipientType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private NotificationType notificationType;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(nullable = false, length = 2000)
+    private String body;
+
+    @Column(nullable = false)
+    @ColumnDefault("0")
+    private boolean read;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    @Column
+    private String referenceType;
+
+    @Column
+    private Long referenceId;
+
+    @PrePersist
+    private void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

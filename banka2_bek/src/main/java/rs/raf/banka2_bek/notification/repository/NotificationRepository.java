@@ -1,6 +1,11 @@
 package rs.raf.banka2_bek.notification.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import rs.raf.banka2_bek.notification.model.Notification;
 
 // ============================================================
@@ -34,4 +39,18 @@ import rs.raf.banka2_bek.notification.model.Notification;
 // Spec: Zadaci_Backend.pdf, zadatak B1.
 // ============================================================
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
+
+    Page<Notification> findByRecipientIdAndRecipientType(Long recipientId, String recipientType, Pageable pageable);
+
+    Page<Notification> findByRecipientIdAndRecipientTypeAndRead(Long recipientId, String recipientType, boolean read, Pageable pageable);
+
+    long countByRecipientIdAndRecipientTypeAndRead(Long recipientId, String recipientType, boolean read);
+
+    @Modifying
+    @Query("UPDATE Notification notification SET notification.read = true " +
+            "WHERE notification.recipientId = :recipientId AND notification.recipientType = :recipientType")
+    int markAllReadForRecipient(
+            @Param("recipientId") Long recipientId,
+            @Param("recipientType") String recipientType
+    );
 }
