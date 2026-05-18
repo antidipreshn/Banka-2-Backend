@@ -1,5 +1,8 @@
 package rs.raf.banka2_bek.dividend.dto;
-
+import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 // ============================================================
 // TODO [B9 - Isplata dividendi na akcije | Nosilac: Djordje Zlatanovic]
 //
@@ -31,6 +34,26 @@ package rs.raf.banka2_bek.dividend.dto;
 // Konvencija: pratiti paket `savings` kao sablon.
 // Spec: Zadaci_Backend.pdf, zadatak B9.
 // ============================================================
-
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DividendPayoutDto {
+    private Long id;
+    private Long ownerId;
+    private String ownerType;
+    private Long stockListingId;
+    private String stockTicker;
+    private Integer quantity;
+    private BigDecimal priceOnDate;
+    private BigDecimal dividendYieldRate;
+    private BigDecimal grossAmount;
+    private BigDecimal tax;
+    private BigDecimal netAmount;
+    private Long creditedAccountId;
+    private String currencyCode;
+    private LocalDate paymentDate;
+    private Boolean taxExempt;
+    private LocalDateTime createdAt;
 }

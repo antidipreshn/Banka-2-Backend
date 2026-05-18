@@ -3,7 +3,17 @@ package rs.raf.banka2_bek.dividend.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import rs.raf.banka2_bek.dividend.dto.DividendPayoutDto;
+import rs.raf.banka2_bek.dividend.service.DividendService;
 
+import java.time.LocalDate;
+import java.util.List;
 // ============================================================
 // TODO [B9 - Isplata dividendi na akcije | Nosilac: Djordje Zlatanovic]
 //
@@ -46,4 +56,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/dividends")
 @RequiredArgsConstructor
 public class DividendController {
+    private final DividendService dividendService;
+
+    @GetMapping("/my")
+    public ResponseEntity<List<DividendPayoutDto>> getMyDividendHistory() {
+        return ResponseEntity.ok(dividendService.getMyDividendHistory());
+    }
+
+    @GetMapping("/by-position/{portfolioId}")
+    public ResponseEntity<List<DividendPayoutDto>> getDividendHistoryByPosition(@PathVariable Long portfolioId) {
+        return ResponseEntity.ok(dividendService.getDividendHistoryByPosition(portfolioId));
+    }
+
+    @GetMapping("/admin")
+    public ResponseEntity<Page<DividendPayoutDto>> getAdminDividends(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(dividendService.getAdminDividendHistory(from, to, PageRequest.of(page, size)));
+    }
 }
