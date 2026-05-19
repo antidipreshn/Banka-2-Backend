@@ -64,6 +64,7 @@ import rs.raf.banka2_bek.notification.model.NotificationType;
 @Service
 public class NotificationServiceImpl implements NotificationService {
 
+    @Transactional
     @Override
     public void notify(Long recipientId, String recipientType, NotificationType notificationType, String title, String body, String referenceType, Long referenceId) {
 
