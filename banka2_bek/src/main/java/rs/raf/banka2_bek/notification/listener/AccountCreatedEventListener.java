@@ -17,7 +17,6 @@ public class AccountCreatedEventListener {
     @Async
     @EventListener
     public void onClientAccountCreatedEvent(AccountCreatedEvent event) {
-        
         mailSenderService.sendAccountCreatedConfirmationMail(
                 event.getEmail(),
                 event.getFirstName(),
