@@ -143,4 +143,5 @@ class MailSenderServiceImplExtendedTest {
         service.sendInAppNotificationMail(event);
         verify(mailSender).send(mimeMessage);
     }
+
 }

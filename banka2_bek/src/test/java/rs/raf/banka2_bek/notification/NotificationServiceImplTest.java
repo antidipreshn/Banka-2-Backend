@@ -105,6 +105,17 @@ class NotificationServiceImplTest {
         verify(eventPublisher, never()).publishEvent(any());
     }
 
+    // [B1 — Test coverage] Verifies that types with sendsEmail=false never trigger the
+    // email pipeline. Important for B4 order/OTC types which are in-app only.
+    @Test
+    void notify_doesNotPublishEmailEventForNonEmailType() {
+        notificationService.notify(CLIENT_ID, "CLIENT", NotificationType.ORDER_PENDING,
+                "Order na cekanju", "Vas order je kreiran i ceka odobrenje.", null, null);
+
+        verify(notificationRepository).save(any(Notification.class));
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
     @Test
     void getMyNotifications_returnsAllWhenOnlyUnreadFalse() {
         Page<Notification> page = new PageImpl<>(List.of(
@@ -159,6 +170,15 @@ class NotificationServiceImplTest {
 
         assertThrows(AccessDeniedException.class,
                 () -> notificationService.markOneRead(10L, 999L, "CLIENT"));
+    }
+
+    @Test
+    void markOneRead_throwsWhenRecipientTypeDoesNotMatch() {
+        // Notification belongs to CLIENT_ID as a CLIENT; same id but EMPLOYEE type should be denied.
+        when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification(false)));
+
+        assertThrows(AccessDeniedException.class,
+                () -> notificationService.markOneRead(10L, CLIENT_ID, "EMPLOYEE"));
     }
 
     @Test

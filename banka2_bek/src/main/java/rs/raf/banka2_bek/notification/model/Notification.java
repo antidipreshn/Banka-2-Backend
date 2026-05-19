@@ -10,31 +10,21 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
-// ============================================================
-// TODO [B1 - Notifikacioni sistem | Nosilac: Mina Kovacevic, Tadija]
+// [B1 — DONE] In-app notification entity persisted in table "notifications".
+// All B1-specified fields are implemented: recipientId, recipientType,
+// notificationType (STRING enum), title, body, read (@ColumnDefault("0")),
+// createdAt (@PrePersist auto-set), referenceType (nullable), referenceId (nullable).
 //
-// JPA entitet koji predstavlja jednu in-app notifikaciju
-// persistiranu u tabeli "notifications".
+// [B4 — Petar] referenceType / referenceId are the primary mechanism for the
+// frontend to deep-link to the originating resource (e.g., referenceType="PAYMENT",
+// referenceId=paymentId). B4 should populate these fields in every notify() call
+// so that both the UI and B4 email templates can navigate to / enrich from the resource.
 //
-// IMPLEMENTIRATI (sva polja dodati uz odgovarajuce JPA anotacije):
-//   - recipientId     : Long,          @Column(nullable = false)
-//   - recipientType   : String,        @Column(nullable = false)
-//                       vrednosti: "CLIENT" ili "EMPLOYEE"
-//   - type            : NotificationType, @Enumerated(EnumType.STRING),
-//                       @Column(nullable = false)
-//   - title           : String,        @Column(nullable = false)
-//   - body            : String,        @Column(nullable = false, length = 2000)
-//   - read            : boolean,       @Column(nullable = false),
-//                       @ColumnDefault("0"), default vrednost false
-//   - createdAt       : LocalDateTime, @Column(nullable = false)
-//                       postaviti u @PrePersist ako nije eksplicitno setovano
-//   - referenceType   : String,        @Column nullable (opciono — tip resursa,
-//                       npr. "ORDER", "PAYMENT", "OTC_CONTRACT")
-//   - referenceId     : Long,          @Column nullable (opciono — ID resursa)
+// [B5 — Aleksa] When adding PRICE_ALERT notifications, pass referenceType="PRICE_ALERT",
+// referenceId=alertId so the frontend can open the alert detail.
 //
-// Konvencija: pratiti paket `savings` kao sablon.
-// Spec: Zadaci_Backend.pdf, zadatak B1.
-// ============================================================
+// [B8 — Nikola Djurovic] When adding RECURRING_ORDER_SKIPPED notifications, pass
+// referenceType="RECURRING_ORDER", referenceId=recurringOrderId.
 
 @Entity
 @Table(name = "notifications")

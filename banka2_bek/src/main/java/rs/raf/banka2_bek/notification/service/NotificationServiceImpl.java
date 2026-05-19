@@ -23,6 +23,21 @@ import rs.raf.banka2_bek.notification.model.Notification;
 import rs.raf.banka2_bek.notification.model.NotificationType;
 import rs.raf.banka2_bek.notification.repository.NotificationRepository;
 
+/**
+ * Default implementation of {@link NotificationService}.
+ *
+ * <p>Each call to {@link #notify} atomically:
+ * <ol>
+ *   <li>Persists the in-app notification to the database.</li>
+ *   <li>If the notification type has {@code sendsEmail = true}, resolves the
+ *       recipient's contact details and publishes an {@link InAppNotificationEvent}
+ *       that is picked up by {@link InAppNotificationEventListener} after the
+ *       transaction commits on a separate thread.</li>
+ * </ol>
+ *
+ * <p>E-mail dispatch failures are logged and swallowed: the in-app record is
+ * already persisted and must not be rolled back due to an SMTP problem.
+ */
 @Slf4j
 @Service
 @AllArgsConstructor
@@ -105,10 +120,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * Resolves the recipient's contact data and publishes the event that
-     * triggers the e-mail. Any failure here is logged and swallowed: the
-     * notification is already persisted and an e-mail problem must not roll it
-     * back.
+     * Resolves the recipient's contact details and publishes an
+     * {@link InAppNotificationEvent} to the application event bus. The listener
+     * picks it up after the transaction commits and sends the email off-thread.
+     *
+     * <p>Any failure (unresolvable recipient, SMTP error) is logged at WARN
+     * level and swallowed — the notification is already persisted and must not
+     * be rolled back due to an email problem.
      */
     private void queueEmail(Long recipientId,
                             String recipientType,
@@ -136,6 +154,18 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    /**
+     * Loads the contact details (email, name, gender) for the given recipient.
+     *
+     * <p>These details are forwarded on {@link InAppNotificationEvent} so that
+     * email templates can personalise their content without an additional DB
+     * query. When B4 extends {@code sendInAppNotificationMail()} with
+     * type-based dispatch, {@code firstName}/{@code lastName}/{@code gender}
+     * are already available on the event for rich template rendering.
+     *
+     * @throws InAppNotificationException if the recipient cannot be found or
+     *                                    the recipientType is unrecognised
+     */
     private RecipientContact resolveContact(Long recipientId, String recipientType) {
         if (UserRole.EMPLOYEE.equals(recipientType)) {
             Employee employee = employeeRepository.findById(recipientId)
