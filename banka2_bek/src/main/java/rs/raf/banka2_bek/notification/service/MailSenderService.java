@@ -197,7 +197,7 @@ public class MailSenderService {
      *
      * <p>Called by {@link rs.raf.banka2_bek.notification.listener.InAppNotificationEventListener}
      * after the notification transaction commits. Uses {@code event.title} as
-     * the email subject and personalises the greeting with {@code firstName}
+     * the email subject and personalizes the greeting with {@code firstName}
      * when it is present and non-blank; falls back to a neutral greeting
      * otherwise.
      *
