@@ -1,8 +1,8 @@
 package rs.raf.banka2_bek.notification.service;
 
-import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import rs.raf.banka2_bek.notification.dto.NotificationDto;
 import rs.raf.banka2_bek.notification.model.NotificationType;
 
