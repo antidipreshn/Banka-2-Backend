@@ -9,7 +9,7 @@ import rs.raf.banka2_bek.notification.model.NotificationType;
  * notification has been persisted. It carries everything the e-mail channel
  * needs — including the recipient's name and gender — so that mail can be sent
  * after the transaction commits, off the caller's thread, and so e-mail
- * templates can be personalised.
+ * templates can be personalized.
  *
  * <p>This event is an implementation detail of the notification module — other
  * modules raise notifications by calling {@code notify(...)}, never by
