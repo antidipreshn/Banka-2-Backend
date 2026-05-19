@@ -3,7 +3,15 @@ package rs.raf.banka2_bek.dividend.scheduler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import rs.raf.banka2_bek.dividend.service.DividendService;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 // ============================================================
 // TODO [B9 - Isplata dividendi na akcije | Nosilac: Djordje Zlatanovic]
 //
@@ -47,4 +55,26 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 @Slf4j
 public class DividendScheduler {
+    private final DividendService dividendService;
+
+    // Cron okida poslednjeg dana u mesecima: Mart, Jun, Septembar, Decembar u 06:00 AM
+    @Scheduled(cron = "0 0 6 L MAR,JUN,SEP,DEC ?")
+    public void runQuarterlyDividendPayout() {
+        log.info("[SCHEDULER] Pokrenut kvartalni posao isplate dividendi.");
+
+        LocalDate paymentDate = LocalDate.now(ZoneOffset.UTC);
+
+        // Logika za pomeranje na prethodni petak ukoliko je poslednji dan vikend
+        while (paymentDate.getDayOfWeek() == DayOfWeek.SATURDAY || paymentDate.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            paymentDate = paymentDate.minusDays(1);
+        }
+
+        try {
+            dividendService.processQuarterlyDividends(paymentDate);
+            log.info("[SCHEDULER] Kvartalni posao isplate dividendi uspešno završen.");
+        } catch (Exception e) {
+            log.error("[SCHEDULER] Kritična greška tokom izvršavanja isplate dividendi: {}", e.getMessage(), e);
+        }
+    }
+
 }
