@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
+import rs.raf.banka2_bek.notification.event.InAppNotificationEvent;
+import rs.raf.banka2_bek.notification.model.NotificationType;
 import rs.raf.banka2_bek.notification.template.*;
 
 import java.math.BigDecimal;
@@ -131,7 +133,14 @@ class MailSenderServiceImplExtendedTest {
     }
 
     @Test void sendInAppNotificationMail_sends() {
-        service.sendInAppNotificationMail("u@b.rs", "Naslov", "Telo poruke");
+        InAppNotificationEvent event = InAppNotificationEvent.builder()
+                .recipientEmail("u@b.rs")
+                .firstName("Marko")
+                .notificationType(NotificationType.GENERAL)
+                .title("Naslov")
+                .body("Telo poruke")
+                .build();
+        service.sendInAppNotificationMail(event);
         verify(mailSender).send(mimeMessage);
     }
 }

@@ -7,10 +7,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rs.raf.banka2_bek.auth.util.UserRole;
+import rs.raf.banka2_bek.client.model.Client;
 import rs.raf.banka2_bek.client.repository.ClientRepository;
+import rs.raf.banka2_bek.employee.model.Employee;
 import rs.raf.banka2_bek.employee.repository.EmployeeRepository;
 import rs.raf.banka2_bek.notification.dto.NotificationDto;
 import rs.raf.banka2_bek.notification.event.InAppNotificationEvent;
@@ -30,11 +33,6 @@ public class NotificationServiceImpl implements NotificationService {
     private final EmployeeRepository employeeRepository;
     private final ClientRepository clientRepository;
 
-    /**
-     * Single entry point for raising a notification. Persists the in-app
-     * notification and, when the type sends e-mail, hands the e-mail off to be
-     * delivered after this transaction commits — see InAppNotificationEventListener.
-     */
     @Transactional
     @Override
     public void notify(Long recipientId,
@@ -63,12 +61,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Page<NotificationDto> getMyNotifications(String principalEmail,
+    public Page<NotificationDto> getMyNotifications(Long recipientId,
                                                     String recipientType,
                                                     boolean onlyUnread,
                                                     int page,
                                                     int size) {
-        Long recipientId = resolveRecipientId(principalEmail, recipientType);
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Notification> result = onlyUnread
                 ? notificationRepository.findByRecipientIdAndRecipientTypeAndRead(
@@ -79,42 +76,39 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Long getUnreadCount(String principalEmail, String recipientType) {
-        Long recipientId = resolveRecipientId(principalEmail, recipientType);
+    public Long getUnreadCount(Long recipientId, String recipientType) {
         return notificationRepository.countByRecipientIdAndRecipientTypeAndRead(
                 recipientId, recipientType, false);
     }
 
     @Transactional
     @Override
-    public NotificationDto markOneRead(Long notificationId, String principalEmail, String recipientType) {
+    public NotificationDto markOneRead(Long notificationId, Long recipientId, String recipientType) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new InAppNotificationException(
                         "Notification with id " + notificationId + " not found"));
 
-        Long recipientId = resolveRecipientId(principalEmail, recipientType);
-        if (!recipientId.equals(notification.getRecipientId())
-                || !recipientType.equals(notification.getRecipientType())) {
-            throw new IllegalArgumentException(
+        if (!notification.getRecipientId().equals(recipientId)
+                || !notification.getRecipientType().equals(recipientType)) {
+            throw new AccessDeniedException(
                     "Notification " + notificationId + " does not belong to the current user");
         }
 
         notification.setRead(true);
-        Notification saved = notificationRepository.save(notification);
-        return NotificationObjectMapper.toDto(saved);
+        return NotificationObjectMapper.toDto(notificationRepository.save(notification));
     }
 
     @Transactional
     @Override
-    public void markAllRead(String principalEmail, String recipientType) {
-        Long recipientId = resolveRecipientId(principalEmail, recipientType);
+    public void markAllRead(Long recipientId, String recipientType) {
         notificationRepository.markAllReadForRecipient(recipientId, recipientType);
     }
 
     /**
-     * Resolves the recipient's e-mail and publishes the event that triggers it.
-     * Any failure here is logged and swallowed: the notification is already
-     * persisted and an e-mail problem must not roll it back.
+     * Resolves the recipient's contact data and publishes the event that
+     * triggers the e-mail. Any failure here is logged and swallowed: the
+     * notification is already persisted and an e-mail problem must not roll it
+     * back.
      */
     private void queueEmail(Long recipientId,
                             String recipientType,
@@ -124,12 +118,15 @@ public class NotificationServiceImpl implements NotificationService {
                             String referenceType,
                             Long referenceId) {
         try {
-            String recipientEmail = resolveEmail(recipientId, recipientType);
+            RecipientContact contact = resolveContact(recipientId, recipientType);
             eventPublisher.publishEvent(InAppNotificationEvent.builder()
-                    .recipientEmail(recipientEmail)
+                    .recipientEmail(contact.email())
+                    .firstName(contact.firstName())
+                    .lastName(contact.lastName())
+                    .gender(contact.gender())
+                    .notificationType(notificationType)
                     .title(title)
                     .body(body)
-                    .notificationType(notificationType)
                     .referenceType(referenceType)
                     .referenceId(referenceId)
                     .build());
@@ -139,37 +136,25 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-    private String resolveEmail(Long recipientId, String recipientType) {
+    private RecipientContact resolveContact(Long recipientId, String recipientType) {
         if (UserRole.EMPLOYEE.equals(recipientType)) {
-            return employeeRepository.findById(recipientId)
+            Employee employee = employeeRepository.findById(recipientId)
                     .orElseThrow(() -> new InAppNotificationException(
-                            "Employee with id " + recipientId + " not found"))
-                    .getEmail();
+                            "Employee with id " + recipientId + " not found"));
+            return new RecipientContact(employee.getEmail(), employee.getFirstName(),
+                    employee.getLastName(), employee.getGender());
         }
         if (UserRole.CLIENT.equals(recipientType)) {
-            return clientRepository.findById(recipientId)
+            Client client = clientRepository.findById(recipientId)
                     .orElseThrow(() -> new InAppNotificationException(
-                            "Client with id " + recipientId + " not found"))
-                    .getEmail();
+                            "Client with id " + recipientId + " not found"));
+            return new RecipientContact(client.getEmail(), client.getFirstName(),
+                    client.getLastName(), client.getGender());
         }
         throw new InAppNotificationException(
                 "recipientType must be \"CLIENT\" or \"EMPLOYEE\", got: " + recipientType);
     }
 
-    private Long resolveRecipientId(String principalEmail, String recipientType) {
-        if (UserRole.EMPLOYEE.equals(recipientType)) {
-            return employeeRepository.findByEmail(principalEmail)
-                    .orElseThrow(() -> new InAppNotificationException(
-                            "Employee with e-mail " + principalEmail + " not found"))
-                    .getId();
-        }
-        if (UserRole.CLIENT.equals(recipientType)) {
-            return clientRepository.findByEmail(principalEmail)
-                    .orElseThrow(() -> new InAppNotificationException(
-                            "Client with e-mail " + principalEmail + " not found"))
-                    .getId();
-        }
-        throw new InAppNotificationException(
-                "recipientType must be \"CLIENT\" or \"EMPLOYEE\", got: " + recipientType);
+    private record RecipientContact(String email, String firstName, String lastName, String gender) {
     }
 }

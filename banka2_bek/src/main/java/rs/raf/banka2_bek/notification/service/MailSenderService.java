@@ -3,6 +3,7 @@ package rs.raf.banka2_bek.notification.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import rs.raf.banka2_bek.notification.event.InAppNotificationEvent;
 import rs.raf.banka2_bek.notification.template.AccountCreatedConfirmationEmailTemplate;
 import rs.raf.banka2_bek.notification.template.ActivationConfirmedEmailTemplate;
 import rs.raf.banka2_bek.notification.template.ActivationEmailTemplate;
@@ -174,15 +175,42 @@ public class MailSenderService {
     }
 
 
-    public void sendInAppNotificationMail(String toEmail, String title, String body) {
+    // ============================================================
+    // [B1 - Notifikacioni sistem] Genericki e-mail za in-app notifikaciju.
+    //
+    // Salje JEDAN genericki, brendiran e-mail za SVE tipove notifikacija,
+    // koristeci title/body koje je prosledio pozivalac notify(...) i ime
+    // primaoca za personalizovan pozdrav. Vrednosti su privremene, realne.
+    //
+    // [B4 - Okidaci notifikacija] prosiruje ovu metodu u dispatch po tipu:
+    // switch (event.getNotificationType()) koji za poslovne tipove renderuje
+    // prilagodjen sablon umesto ovog generickog — dohvata domenske podatke
+    // preko event.getReferenceId() i delegira na specificne metode, npr.:
+    //     PAYMENT        -> sendPaymentConfirmationMail(...)
+    //     CARD_BLOCKED   -> sendCardBlockedMail(...)
+    //     LOAN_APPROVED  -> sendLoanApprovedMail(...)
+    // Polja firstName/lastName/gender na event-u postoje da bi ti B4 sabloni
+    // mogli da personalizuju sadrzaj. Dok B4 ne bude implementiran, svaki
+    // tip notifikacije dobija ovaj genericki e-mail.
+    // ============================================================
+    public void sendInAppNotificationMail(InAppNotificationEvent event) {
+        String greeting = (event.getFirstName() != null && !event.getFirstName().isBlank())
+                ? "Poštovani " + event.getFirstName() + ","
+                : "Poštovani,";
         String html = """
                 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#1f2937;">
-                    <h2 style="color:#4338ca;margin:0 0 12px 0;">%s</h2>
-                    <p style="font-size:14px;color:#4b5563;line-height:1.6;margin:0 0 20px 0;">%s</p>
-                    <p style="font-size:11px;color:#9ca3af;margin:0;">Ovo je automatska poruka od Banka 2.</p>
+                    <div style="background:linear-gradient(135deg,#6366f1,#7c3aed);padding:24px;border-radius:12px 12px 0 0;">
+                        <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.7);">Banka 2</p>
+                        <h1 style="margin:4px 0 0 0;font-size:20px;color:#ffffff;">%s</h1>
+                    </div>
+                    <div style="padding:24px;background:#ffffff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+                        <p style="margin:0 0 12px 0;font-size:14px;color:#4b5563;">%s</p>
+                        <p style="margin:0;font-size:14px;color:#4b5563;line-height:1.6;">%s</p>
+                        <p style="margin:24px 0 0 0;font-size:11px;color:#9ca3af;">Ovo je automatska poruka od Banka 2. Molimo ne odgovarajte na ovaj email.</p>
+                    </div>
                 </div>
-                """.formatted(title, body);
-        HtmlMailSender.sendHtmlMail(mailSender, fromAddress, toEmail, title, html);
+                """.formatted(event.getTitle(), greeting, event.getBody());
+        HtmlMailSender.sendHtmlMail(mailSender, fromAddress, event.getRecipientEmail(), event.getTitle(), html);
     }
 
 }

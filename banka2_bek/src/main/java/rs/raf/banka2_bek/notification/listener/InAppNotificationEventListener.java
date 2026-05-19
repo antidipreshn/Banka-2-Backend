@@ -29,11 +29,7 @@ public class InAppNotificationEventListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onInAppNotificationEvent(InAppNotificationEvent event) {
         try {
-            mailSenderService.sendInAppNotificationMail(
-                    event.getRecipientEmail(),
-                    event.getTitle(),
-                    event.getBody()
-            );
+            mailSenderService.sendInAppNotificationMail(event);
         } catch (Exception e) {
             log.warn("Failed to send notification e-mail to {}", event.getRecipientEmail(), e);
         }

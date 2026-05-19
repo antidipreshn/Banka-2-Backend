@@ -22,31 +22,32 @@ class InAppNotificationEventListenerTest {
     @InjectMocks
     private InAppNotificationEventListener listener;
 
-    @Test
-    void onInAppNotificationEvent_sendsMailWithEventData() {
-        InAppNotificationEvent event = InAppNotificationEvent.builder()
+    private InAppNotificationEvent event() {
+        return InAppNotificationEvent.builder()
                 .recipientEmail("user@test.rs")
+                .firstName("Marko")
+                .lastName("Markovic")
+                .gender("M")
+                .notificationType(NotificationType.GENERAL)
                 .title("Naslov")
                 .body("Telo poruke")
-                .notificationType(NotificationType.GENERAL)
                 .build();
+    }
+
+    @Test
+    void onInAppNotificationEvent_sendsMailForEvent() {
+        InAppNotificationEvent event = event();
 
         listener.onInAppNotificationEvent(event);
 
-        verify(mailSenderService).sendInAppNotificationMail("user@test.rs", "Naslov", "Telo poruke");
+        verify(mailSenderService).sendInAppNotificationMail(event);
     }
 
     @Test
     void onInAppNotificationEvent_swallowsMailFailure() {
-        InAppNotificationEvent event = InAppNotificationEvent.builder()
-                .recipientEmail("user@test.rs")
-                .title("Naslov")
-                .body("Telo poruke")
-                .notificationType(NotificationType.GENERAL)
-                .build();
+        InAppNotificationEvent event = event();
         doThrow(new RuntimeException("SMTP down"))
-                .when(mailSenderService)
-                .sendInAppNotificationMail("user@test.rs", "Naslov", "Telo poruke");
+                .when(mailSenderService).sendInAppNotificationMail(event);
 
         assertDoesNotThrow(() -> listener.onInAppNotificationEvent(event));
     }

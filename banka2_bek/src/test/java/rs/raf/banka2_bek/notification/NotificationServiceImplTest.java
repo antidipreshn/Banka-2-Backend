@@ -11,9 +11,9 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import rs.raf.banka2_bek.client.model.Client;
 import rs.raf.banka2_bek.client.repository.ClientRepository;
-import rs.raf.banka2_bek.employee.model.Employee;
 import rs.raf.banka2_bek.employee.repository.EmployeeRepository;
 import rs.raf.banka2_bek.notification.dto.NotificationDto;
 import rs.raf.banka2_bek.notification.event.InAppNotificationEvent;
@@ -40,8 +40,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceImplTest {
 
-    private static final String CLIENT_EMAIL = "client@test.rs";
-    private static final String EMPLOYEE_EMAIL = "employee@test.rs";
+    private static final Long CLIENT_ID = 5L;
+    private static final Long EMPLOYEE_ID = 8L;
 
     @Mock
     private NotificationRepository notificationRepository;
@@ -63,15 +63,18 @@ class NotificationServiceImplTest {
     @Test
     void notify_persistsNotificationAndDelegatesToEmail() {
         Client client = mock(Client.class);
-        when(client.getEmail()).thenReturn(CLIENT_EMAIL);
-        when(clientRepository.findById(1L)).thenReturn(Optional.of(client));
+        when(client.getEmail()).thenReturn("marko@test.rs");
+        when(client.getFirstName()).thenReturn("Marko");
+        when(client.getLastName()).thenReturn("Markovic");
+        when(client.getGender()).thenReturn("M");
+        when(clientRepository.findById(CLIENT_ID)).thenReturn(Optional.of(client));
 
-        notificationService.notify(1L, "CLIENT", NotificationType.PAYMENT,
+        notificationService.notify(CLIENT_ID, "CLIENT", NotificationType.PAYMENT,
                 "Placanje", "Vase placanje je izvrseno", "PAYMENT", 99L);
 
         verify(notificationRepository).save(notificationCaptor.capture());
         Notification saved = notificationCaptor.getValue();
-        assertEquals(1L, saved.getRecipientId().longValue());
+        assertEquals(CLIENT_ID, saved.getRecipientId());
         assertEquals("CLIENT", saved.getRecipientType());
         assertEquals(NotificationType.PAYMENT, saved.getNotificationType());
         assertEquals("Placanje", saved.getTitle());
@@ -82,16 +85,20 @@ class NotificationServiceImplTest {
 
         verify(eventPublisher).publishEvent(eventCaptor.capture());
         InAppNotificationEvent event = eventCaptor.getValue();
-        assertEquals(CLIENT_EMAIL, event.getRecipientEmail());
+        assertEquals("marko@test.rs", event.getRecipientEmail());
+        assertEquals("Marko", event.getFirstName());
+        assertEquals("Markovic", event.getLastName());
+        assertEquals("M", event.getGender());
         assertEquals("Placanje", event.getTitle());
         assertEquals("Vase placanje je izvrseno", event.getBody());
+        assertEquals(NotificationType.PAYMENT, event.getNotificationType());
     }
 
     @Test
     void notify_emailFailureDoesNotRollbackPersistence() {
-        when(clientRepository.findById(1L)).thenReturn(Optional.empty());
+        when(clientRepository.findById(CLIENT_ID)).thenReturn(Optional.empty());
 
-        notificationService.notify(1L, "CLIENT", NotificationType.PAYMENT,
+        notificationService.notify(CLIENT_ID, "CLIENT", NotificationType.PAYMENT,
                 "Placanje", "telo", null, null);
 
         verify(notificationRepository).save(any(Notification.class));
@@ -100,59 +107,46 @@ class NotificationServiceImplTest {
 
     @Test
     void getMyNotifications_returnsAllWhenOnlyUnreadFalse() {
-        Client client = mock(Client.class);
-        when(client.getId()).thenReturn(5L);
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
         Page<Notification> page = new PageImpl<>(List.of(
                 notification(false), notification(true), notification(false)));
         when(notificationRepository.findByRecipientIdAndRecipientType(
-                eq(5L), eq("CLIENT"), any(Pageable.class))).thenReturn(page);
+                eq(CLIENT_ID), eq("CLIENT"), any(Pageable.class))).thenReturn(page);
 
         Page<NotificationDto> result =
-                notificationService.getMyNotifications(CLIENT_EMAIL, "CLIENT", false, 0, 20);
+                notificationService.getMyNotifications(CLIENT_ID, "CLIENT", false, 0, 20);
 
         assertEquals(3, result.getContent().size());
     }
 
     @Test
     void getMyNotifications_returnsOnlyUnreadWhenFlagTrue() {
-        Client client = mock(Client.class);
-        when(client.getId()).thenReturn(5L);
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
         Page<Notification> page = new PageImpl<>(List.of(notification(false)));
         when(notificationRepository.findByRecipientIdAndRecipientTypeAndRead(
-                eq(5L), eq("CLIENT"), eq(false), any(Pageable.class))).thenReturn(page);
+                eq(CLIENT_ID), eq("CLIENT"), eq(false), any(Pageable.class))).thenReturn(page);
 
         Page<NotificationDto> result =
-                notificationService.getMyNotifications(CLIENT_EMAIL, "CLIENT", true, 0, 20);
+                notificationService.getMyNotifications(CLIENT_ID, "CLIENT", true, 0, 20);
 
         assertEquals(1, result.getContent().size());
     }
 
     @Test
     void getUnreadCount_returnsCorrectCount() {
-        Employee employee = mock(Employee.class);
-        when(employee.getId()).thenReturn(8L);
-        when(employeeRepository.findByEmail(EMPLOYEE_EMAIL)).thenReturn(Optional.of(employee));
-        when(notificationRepository.countByRecipientIdAndRecipientTypeAndRead(8L, "EMPLOYEE", false))
+        when(notificationRepository.countByRecipientIdAndRecipientTypeAndRead(EMPLOYEE_ID, "EMPLOYEE", false))
                 .thenReturn(7L);
 
-        Long count = notificationService.getUnreadCount(EMPLOYEE_EMAIL, "EMPLOYEE");
+        Long count = notificationService.getUnreadCount(EMPLOYEE_ID, "EMPLOYEE");
 
         assertEquals(7L, count.longValue());
     }
 
     @Test
     void markOneRead_updatesReadFlagAndReturnsDto() {
-        Notification notification = notification(false);
-        when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification));
-        Client client = mock(Client.class);
-        when(client.getId()).thenReturn(5L);
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
+        when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification(false)));
         when(notificationRepository.save(any(Notification.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        NotificationDto dto = notificationService.markOneRead(10L, CLIENT_EMAIL, "CLIENT");
+        NotificationDto dto = notificationService.markOneRead(10L, CLIENT_ID, "CLIENT");
 
         verify(notificationRepository).save(notificationCaptor.capture());
         assertTrue(notificationCaptor.getValue().isRead());
@@ -161,14 +155,10 @@ class NotificationServiceImplTest {
 
     @Test
     void markOneRead_throwsWhenNotificationBelongsToOtherRecipient() {
-        Notification notification = notification(false);
-        when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification));
-        Client client = mock(Client.class);
-        when(client.getId()).thenReturn(999L);
-        when(clientRepository.findByEmail(CLIENT_EMAIL)).thenReturn(Optional.of(client));
+        when(notificationRepository.findById(10L)).thenReturn(Optional.of(notification(false)));
 
-        assertThrows(IllegalArgumentException.class,
-                () -> notificationService.markOneRead(10L, CLIENT_EMAIL, "CLIENT"));
+        assertThrows(AccessDeniedException.class,
+                () -> notificationService.markOneRead(10L, 999L, "CLIENT"));
     }
 
     @Test
@@ -176,24 +166,20 @@ class NotificationServiceImplTest {
         when(notificationRepository.findById(404L)).thenReturn(Optional.empty());
 
         assertThrows(InAppNotificationException.class,
-                () -> notificationService.markOneRead(404L, CLIENT_EMAIL, "CLIENT"));
+                () -> notificationService.markOneRead(404L, CLIENT_ID, "CLIENT"));
     }
 
     @Test
     void markAllRead_delegatesToRepository() {
-        Employee employee = mock(Employee.class);
-        when(employee.getId()).thenReturn(8L);
-        when(employeeRepository.findByEmail(EMPLOYEE_EMAIL)).thenReturn(Optional.of(employee));
+        notificationService.markAllRead(EMPLOYEE_ID, "EMPLOYEE");
 
-        notificationService.markAllRead(EMPLOYEE_EMAIL, "EMPLOYEE");
-
-        verify(notificationRepository).markAllReadForRecipient(8L, "EMPLOYEE");
+        verify(notificationRepository).markAllReadForRecipient(EMPLOYEE_ID, "EMPLOYEE");
     }
 
     private Notification notification(boolean read) {
         return Notification.builder()
                 .id(1L)
-                .recipientId(5L)
+                .recipientId(CLIENT_ID)
                 .recipientType("CLIENT")
                 .notificationType(NotificationType.GENERAL)
                 .title("Naslov")
