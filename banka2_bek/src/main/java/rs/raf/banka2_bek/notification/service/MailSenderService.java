@@ -31,7 +31,7 @@ import java.time.LocalDate;
  *        sendCardBlockedMail, prosiriti sadrzaj po potrebi B4 sablonom).
  *      - Kreiranje kredita: potvrda podnosenja zahteva za kredit.
  *      - Odobravanje/odbijanje kredita: odgovor banke na zahtev.
- *      - Lifecycle ordera: obavestenja o statusu ordera (APPROVED, DONE, DECLINED).
+ *      - Lifecycle ordera: obavestenja o statusu ordera (APPRO+VED, DONE, DECLINED).
  *      - OTC dogadjaji: obavestenje o primljenoj OTC ponudi, prihvatanju, kontra-ponudi,
  *        isteku ugovora i iskoristavanju opcijskog ugovora (exercise).
  *      Svaki sablon treba da bude implementiran kao zaseban Spring bean (po uzoru na
@@ -174,8 +174,15 @@ public class MailSenderService {
     }
 
 
-    public void sendInAppNotificationMail() {
-        // TODO: IMPLEMENTIRATI F-je za slanje in-app mailova
+    public void sendInAppNotificationMail(String toEmail, String title, String body) {
+        String html = """
+                <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#1f2937;">
+                    <h2 style="color:#4338ca;margin:0 0 12px 0;">%s</h2>
+                    <p style="font-size:14px;color:#4b5563;line-height:1.6;margin:0 0 20px 0;">%s</p>
+                    <p style="font-size:11px;color:#9ca3af;margin:0;">Ovo je automatska poruka od Banka 2.</p>
+                </div>
+                """.formatted(title, body);
+        HtmlMailSender.sendHtmlMail(mailSender, fromAddress, toEmail, title, html);
     }
 
 }

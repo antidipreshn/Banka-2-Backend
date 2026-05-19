@@ -129,4 +129,9 @@ class MailSenderServiceImplExtendedTest {
         service.sendInstallmentFailedMail("u@b.rs", "LN1", BigDecimal.TEN, "RSD", LocalDate.now());
         verify(mailSender).send(mimeMessage);
     }
+
+    @Test void sendInAppNotificationMail_sends() {
+        service.sendInAppNotificationMail("u@b.rs", "Naslov", "Telo poruke");
+        verify(mailSender).send(mimeMessage);
+    }
 }

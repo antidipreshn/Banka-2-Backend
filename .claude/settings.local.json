@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn -f banka2_bek/pom.xml -q test-compile)",
+      "PowerShell(Get-Command mvn -ErrorAction SilentlyContinue)",
+      "PowerShell(java -version)",
+      "PowerShell(Push-Location banka2_bek; .\\\\mvnw.cmd -q test-compile; $rc=$LASTEXITCODE; Pop-Location; \"EXIT=$rc\")"
+    ]
+  }
+}
