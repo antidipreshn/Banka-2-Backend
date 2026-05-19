@@ -28,6 +28,7 @@ import rs.raf.banka2_bek.interbank.repository.InterbankTransactionRepository;
 import rs.raf.banka2_bek.interbank.service.BankRoutingService;
 import rs.raf.banka2_bek.interbank.service.InterbankPaymentAsyncService;
 import rs.raf.banka2_bek.interbank.service.TransactionExecutorService;
+import rs.raf.banka2_bek.notification.service.MailSenderService;
 import rs.raf.banka2_bek.payment.dto.CreatePaymentRequestDto;
 import rs.raf.banka2_bek.payment.dto.PaymentDirection;
 import rs.raf.banka2_bek.payment.dto.PaymentListItemDto;
@@ -38,7 +39,6 @@ import rs.raf.banka2_bek.payment.repository.PaymentAccountRepository;
 import rs.raf.banka2_bek.payment.repository.PaymentRepository;
 import rs.raf.banka2_bek.payment.service.PaymentReceiptPdfGenerator;
 import rs.raf.banka2_bek.payment.service.PaymentService;
-import rs.raf.banka2_bek.notification.service.MailNotificationService;
 import rs.raf.banka2_bek.transaction.dto.TransactionListItemDto;
 import rs.raf.banka2_bek.transaction.dto.TransactionResponseDto;
 import rs.raf.banka2_bek.transaction.dto.TransactionType;
@@ -71,7 +71,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final TransactionService transactionService;
     private final PaymentReceiptPdfGenerator paymentReceiptPdfGenerator;
     private final ExchangeService exchangeService;
-    private final MailNotificationService mailNotificationService;
+    private final MailSenderService mailSenderService;
     private final BankRoutingService bankRoutingService;
     private final TransactionExecutorService transactionExecutorService;
     private final InterbankPaymentAsyncService interbankPaymentAsyncService;
@@ -87,7 +87,7 @@ public class PaymentServiceImpl implements PaymentService {
                               TransactionService transactionService,
                               PaymentReceiptPdfGenerator paymentReceiptPdfGenerator,
                               ExchangeService exchangeService,
-                              MailNotificationService mailNotificationService,
+                              MailSenderService mailSenderService,
                               BankRoutingService bankRoutingService,
                               TransactionExecutorService transactionExecutorService,
                               InterbankPaymentAsyncService interbankPaymentAsyncService,
@@ -100,7 +100,7 @@ public class PaymentServiceImpl implements PaymentService {
         this.transactionService = transactionService;
         this.paymentReceiptPdfGenerator = paymentReceiptPdfGenerator;
         this.exchangeService = exchangeService;
-        this.mailNotificationService = mailNotificationService;
+        this.mailSenderService = mailSenderService;
         this.bankRoutingService = bankRoutingService;
         this.transactionExecutorService = transactionExecutorService;
         this.interbankPaymentAsyncService = interbankPaymentAsyncService;
@@ -259,7 +259,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         try {
-            mailNotificationService.sendPaymentConfirmationMail(
+            mailSenderService.sendPaymentConfirmationMail(
                     client.getEmail(), amount,
                     fromAccount.getCurrency() != null ? fromAccount.getCurrency().getCode() : null,
                     fromAccount.getAccountNumber(), request.getToAccount(),

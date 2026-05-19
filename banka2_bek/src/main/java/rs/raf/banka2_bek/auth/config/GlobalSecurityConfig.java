@@ -180,6 +180,10 @@ public class GlobalSecurityConfig  {
                         .requestMatchers(HttpMethod.POST, "/savings/deposits/*/withdraw-early").authenticated()
                         .requestMatchers(HttpMethod.GET, "/savings/rates").authenticated()
                         .requestMatchers("/admin/savings/**").hasAnyAuthority("ROLE_ADMIN", "ADMIN", "SUPERVISOR")
+                        // [B1 - Notifikacioni sistem] sve in-app notifikacione rute
+                        // zahtevaju autentifikaciju; vlasnistvo nad pojedinacnom
+                        // notifikacijom proverava NotificationService.
+                        .requestMatchers("/notifications/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(AbstractHttpConfigurer::disable)

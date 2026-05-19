@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 // Mock zavisnosti:
 //   @Mock PriceAlertRepository alertRepository
 //   @Mock UserResolver userResolver
-//   @Mock MailNotificationService mailNotificationService  [ako se koristi]
+//   @Mock MailSenderService mailNotificationService  [ako se koristi]
 //
 //   PriceAlertService service;  // inicijalizovati u @BeforeEach
 //

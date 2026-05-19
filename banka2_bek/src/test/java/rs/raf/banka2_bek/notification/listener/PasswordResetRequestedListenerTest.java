@@ -6,7 +6,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import rs.raf.banka2_bek.auth.model.PasswordResetRequestedEvent;
-import rs.raf.banka2_bek.notification.service.MailNotificationService;
+import rs.raf.banka2_bek.notification.service.MailSenderService;
 
 import static org.mockito.Mockito.verify;
 
@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 class PasswordResetRequestedListenerTest {
 
     @Mock
-    private MailNotificationService mailNotificationService;
+    private MailSenderService mailSenderService;
 
     @InjectMocks
     private PasswordResetRequestedListener listener;
@@ -25,6 +25,6 @@ class PasswordResetRequestedListenerTest {
 
         listener.onPasswordResetRequested(event);
 
-        verify(mailNotificationService).sendPasswordResetMail("korisnik@test.com", "resetToken999");
+        verify(mailSenderService).sendPasswordResetMail("korisnik@test.com", "resetToken999");
     }
 }

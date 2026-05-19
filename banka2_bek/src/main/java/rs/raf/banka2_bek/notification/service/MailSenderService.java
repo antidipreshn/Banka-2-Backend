@@ -3,6 +3,7 @@ package rs.raf.banka2_bek.notification.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import rs.raf.banka2_bek.notification.event.InAppNotificationEvent;
 import rs.raf.banka2_bek.notification.template.AccountCreatedConfirmationEmailTemplate;
 import rs.raf.banka2_bek.notification.template.ActivationConfirmedEmailTemplate;
 import rs.raf.banka2_bek.notification.template.ActivationEmailTemplate;
@@ -14,31 +15,48 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /*
- * TODO [B2 + B4 - Email notifikacije]
+ * [B1 — Foundation] Email dispatch hub for the notification module.
+ * The methods below are called either directly by legacy listeners (account
+ * creation, activation, OTP) or via sendInAppNotificationMail() which is
+ * triggered by InAppNotificationEventListener for every in-app notification
+ * whose type has sendsEmail = true.
  *
- * [B2] Dodati metodu za slanje email obavestenja korisniku kada mu se nalog
- *      zakljuca zbog previse neuspesnih pokusaja prijave. Email treba da sadrzi:
- *      - obavestenje da je nalog privremeno zakljucan (sa trajanjem zakljucavanja),
- *      - opciju/link za resetovanje lozinke kako bi korisnik mogao da povrati pristup.
- *      Metoda se okida iz AccountLockoutService u trenutku kada se nalog zakljuca
- *      (tj. kada recordFailure() dostigne maxFailedAttempts i baci AccountLockedException).
+ * ── ALREADY IMPLEMENTED (B1 foundation) ──────────────────────────────────
+ *   Payment:         sendPaymentConfirmationMail(...)
+ *   Card:            sendCardBlockedMail(...), sendCardUnblockedMail(...)
+ *   Loan lifecycle:  sendLoanRequestSubmittedMail(...), sendLoanApprovedMail(...),
+ *                    sendLoanRejectedMail(...)
+ *   Installment:     sendInstallmentPaidMail(...), sendInstallmentFailedMail(...)
+ *   Generic in-app:  sendInAppNotificationMail(...) — branded fallback used for
+ *                    all types until B4 adds type-based dispatch.
  *
- * [B4] Prosiriti notifikacioni sistem novim email sablonima za poslovne dogadjaje:
- *      - Placanje: potvrda uspesnog placanja (sa iznosom, primaocem i datumom).
- *      - Transfer: potvrda medjunarodnog/deviznog transfera.
- *      - Promena limita: obavestenje o promeni dnevnog/mesecnog limita na racunu.
- *      - Blokada kartice: obavestenje kada zaposleni blokira karticu (vec postoji
- *        sendCardBlockedMail, prosiriti sadrzaj po potrebi B4 sablonom).
- *      - Kreiranje kredita: potvrda podnosenja zahteva za kredit.
- *      - Odobravanje/odbijanje kredita: odgovor banke na zahtev.
- *      - Lifecycle ordera: obavestenja o statusu ordera (APPROVED, DONE, DECLINED).
- *      - OTC dogadjaji: obavestenje o primljenoj OTC ponudi, prihvatanju, kontra-ponudi,
- *        isteku ugovora i iskoristavanju opcijskog ugovora (exercise).
- *      Svaki sablon treba da bude implementiran kao zaseban Spring bean (po uzoru na
- *      postojece sablone u notification/template/) i injektovan u ovaj servis.
+ * ── TODO [B4 — Petar Poznanovic] ─────────────────────────────────────────
+ *   1. Add TransactionEmailTemplate methods (or a new template bean) for:
+ *      - Transfer confirmation (TRANSFER)
+ *      - Limit change notification (LIMIT_CHANGE)
+ *      - Order lifecycle: ORDER_APPROVED, ORDER_DECLINED, ORDER_EXECUTED,
+ *                         ORDER_PARTIAL_FILL, ORDER_CANCELLED
+ *      - OTC events: OTC_COUNTER_OFFER, OTC_ACCEPTED, OTC_DECLINED,
+ *                    OTC_CONTRACT_EXPIRING
+ *   2. Replace the generic body of sendInAppNotificationMail() with a
+ *      switch on event.getNotificationType() that dispatches to each specific
+ *      method above; use event.getReferenceId() to load domain data where
+ *      needed (e.g., fetch Payment by id for amount/account details).
+ *      Retain the current generic fallback for unrecognised types.
+ *   3. Add corresponding wiring: each service in payment, transfers, card,
+ *      loan, order, otc calls NotificationService.notify() on the relevant
+ *      event — notify() takes care of everything else.
+ *
+ * ── TODO [B2 — Andjela Vilcek] ───────────────────────────────────────────
+ *   Add sendAccountLockedMail(String toEmail, int lockMinutes, String resetLink)
+ *   using a dedicated template (or extend TransactionEmailTemplate). The
+ *   ACCOUNT_LOCKED type already has sendsEmail = true, so the generic email
+ *   is currently sent; a dedicated template with the reset-password link
+ *   improves user experience. The method is called from AccountLockoutService
+ *   when the account is locked (after 5 failed login attempts).
  */
 @Service
-public class MailNotificationService {
+public class MailSenderService {
 
     private final JavaMailSender mailSender;
     private final String fromAddress;
@@ -53,18 +71,18 @@ public class MailNotificationService {
     private final OtpEmailTemplate otpEmailTemplate;
     private final TransactionEmailTemplate transactionEmailTemplate;
 
-    public MailNotificationService(JavaMailSender mailSender,
-                                   PasswordResetEmailTemplate passwordResetEmailTemplate,
-                                   ActivationEmailTemplate activationEmailTemplate,
-                                   ActivationConfirmedEmailTemplate activationConfirmedEmailTemplate,
-                                   AccountCreatedConfirmationEmailTemplate accountCreatedConfirmationEmailTemplate,
-                                   OtpEmailTemplate otpEmailTemplate,
-                                   TransactionEmailTemplate transactionEmailTemplate,
-                                   @Value("${spring.mail.username}") String fromAddress,
-                                   @Value("${notification.password-reset-url-base}") String passwordResetUrlBase,
-                                   @Value("${notification.password-reset-page-path:/reset-password}") String passwordResetPagePath,
-                                   @Value("${notification.activation-url-base}") String activationUrlBase,
-                                   @Value("${notification.activation-page-path:/activate-account}") String activationPagePath) {
+    public MailSenderService(JavaMailSender mailSender,
+                             PasswordResetEmailTemplate passwordResetEmailTemplate,
+                             ActivationEmailTemplate activationEmailTemplate,
+                             ActivationConfirmedEmailTemplate activationConfirmedEmailTemplate,
+                             AccountCreatedConfirmationEmailTemplate accountCreatedConfirmationEmailTemplate,
+                             OtpEmailTemplate otpEmailTemplate,
+                             TransactionEmailTemplate transactionEmailTemplate,
+                             @Value("${spring.mail.username}") String fromAddress,
+                             @Value("${notification.password-reset-url-base}") String passwordResetUrlBase,
+                             @Value("${notification.password-reset-page-path:/reset-password}") String passwordResetPagePath,
+                             @Value("${notification.activation-url-base}") String activationUrlBase,
+                             @Value("${notification.activation-page-path:/activate-account}") String activationPagePath) {
         this.mailSender = mailSender;
         this.passwordResetEmailTemplate = passwordResetEmailTemplate;
         this.activationEmailTemplate = activationEmailTemplate;
@@ -172,5 +190,47 @@ public class MailNotificationService {
         String html = transactionEmailTemplate.buildInstallmentFailedBody(loanNumber, amountDue, currency, nextRetryDate);
         HtmlMailSender.sendHtmlMail(mailSender, fromAddress, toEmail, subject, html);
     }
+
+
+    /**
+     * [B1] Sends a generic branded email for any in-app notification type.
+     *
+     * <p>Called by {@link rs.raf.banka2_bek.notification.listener.InAppNotificationEventListener}
+     * after the notification transaction commits. Uses {@code event.title} as
+     * the email subject and personalizes the greeting with {@code firstName}
+     * when it is present and non-blank; falls back to a neutral greeting
+     * otherwise.
+     *
+     * <p>[B4 — Petar] This method is the primary extension point: replace the
+     * generic body with a {@code switch} on {@code event.getNotificationType()}
+     * that delegates to the appropriate {@code send*Mail(...)} method
+     * (e.g. {@link #sendPaymentConfirmationMail} for {@code PAYMENT}).
+     * Use {@code event.getReferenceId()} to load domain-specific data where
+     * needed for rich template rendering. Retain this generic path as the
+     * default fallback for any type without a dedicated template.
+     *
+     * @param event the event carrying recipient contact details and
+     *              notification content; must not be {@code null}
+     */
+    public void sendInAppNotificationMail(InAppNotificationEvent event) {
+        String greeting = (event.getFirstName() != null && !event.getFirstName().isBlank())
+                ? "Poštovani " + event.getFirstName() + ","
+                : "Poštovani,";
+        String html = """
+                <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:520px;margin:0 auto;color:#1f2937;">
+                    <div style="background:linear-gradient(135deg,#6366f1,#7c3aed);padding:24px;border-radius:12px 12px 0 0;">
+                        <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.7);">Banka 2</p>
+                        <h1 style="margin:4px 0 0 0;font-size:20px;color:#ffffff;">%s</h1>
+                    </div>
+                    <div style="padding:24px;background:#ffffff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
+                        <p style="margin:0 0 12px 0;font-size:14px;color:#4b5563;">%s</p>
+                        <p style="margin:0;font-size:14px;color:#4b5563;line-height:1.6;">%s</p>
+                        <p style="margin:24px 0 0 0;font-size:11px;color:#9ca3af;">Ovo je automatska poruka od Banka 2. Molimo ne odgovarajte na ovaj email.</p>
+                    </div>
+                </div>
+                """.formatted(event.getTitle(), greeting, event.getBody());
+        HtmlMailSender.sendHtmlMail(mailSender, fromAddress, event.getRecipientEmail(), event.getTitle(), html);
+    }
+
 }
 

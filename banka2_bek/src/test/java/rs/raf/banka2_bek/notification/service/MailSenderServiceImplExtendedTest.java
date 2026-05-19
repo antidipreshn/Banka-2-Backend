@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mail.javamail.JavaMailSender;
+import rs.raf.banka2_bek.notification.event.InAppNotificationEvent;
+import rs.raf.banka2_bek.notification.model.NotificationType;
 import rs.raf.banka2_bek.notification.template.*;
 
 import java.math.BigDecimal;
@@ -17,7 +19,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class MailNotificationServiceExtendedTest {
+class MailSenderServiceImplExtendedTest {
 
     @Mock private JavaMailSender mailSender;
     @Mock private PasswordResetEmailTemplate passwordResetEmailTemplate;
@@ -28,12 +30,12 @@ class MailNotificationServiceExtendedTest {
     @Mock private TransactionEmailTemplate transactionEmailTemplate;
     @Mock private MimeMessage mimeMessage;
 
-    private MailNotificationService service;
+    private MailSenderService service;
 
     @BeforeEach
     void setUp() {
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        service = new MailNotificationService(mailSender, passwordResetEmailTemplate, activationEmailTemplate,
+        service = new MailSenderService(mailSender, passwordResetEmailTemplate, activationEmailTemplate,
                 activationConfirmedEmailTemplate, accountCreatedConfirmationEmailTemplate, otpEmailTemplate,
                 transactionEmailTemplate, "noreply@banka.rs", "http://localhost:3000", "/reset-password",
                 "http://localhost:3000", "/activate-account");
@@ -129,4 +131,17 @@ class MailNotificationServiceExtendedTest {
         service.sendInstallmentFailedMail("u@b.rs", "LN1", BigDecimal.TEN, "RSD", LocalDate.now());
         verify(mailSender).send(mimeMessage);
     }
+
+    @Test void sendInAppNotificationMail_sends() {
+        InAppNotificationEvent event = InAppNotificationEvent.builder()
+                .recipientEmail("u@b.rs")
+                .firstName("Marko")
+                .notificationType(NotificationType.GENERAL)
+                .title("Naslov")
+                .body("Telo poruke")
+                .build();
+        service.sendInAppNotificationMail(event);
+        verify(mailSender).send(mimeMessage);
+    }
+
 }

@@ -17,7 +17,7 @@ import rs.raf.banka2_bek.tax.service.TaxService;
  * <p>
  * Nakon obracuna, loguje notifikaciju o poreskim obavezama.
  * Kada se implementira TaxEmailTemplate, ovde dodati slanje emailova
- * korisnicima ciji se taxOwed promenio (koristeci MailNotificationService).
+ * korisnicima ciji se taxOwed promenio (koristeci MailSenderService).
  */
 @Component
 @RequiredArgsConstructor
